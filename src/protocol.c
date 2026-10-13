@@ -57,17 +57,22 @@ static bool check_host_origin(struct lws *wsi) {
   const char *prot, *address, *path;
   int port;
   if (lws_parse_uri(buf, &prot, &address, &port, &path)) return false;
+  char origin_host[256];
+  int written;
   if (port == 80 || port == 443) {
-    snprintf(buf, sizeof(buf), "%s", address);
+    written = snprintf(origin_host, sizeof(origin_host), "%s", address);
   } else {
-    snprintf(buf, sizeof(buf), "%s:%d", address, port);
+    written = snprintf(origin_host, sizeof(origin_host), "%s:%d", address, port);
+  }
+  if (written < 0 || (size_t)written >= sizeof(origin_host)) {
+    return false;
   }
 
   char host_buf[256];
   memset(host_buf, 0, sizeof(host_buf));
   len = lws_hdr_copy(wsi, host_buf, (int)sizeof(host_buf), WSI_TOKEN_HOST);
 
-  return len > 0 && strcasecmp(buf, host_buf) == 0;
+  return len > 0 && strcasecmp(origin_host, host_buf) == 0;
 }
 
 static pty_ctx_t *pty_ctx_init(struct pss_tty *pss) {
